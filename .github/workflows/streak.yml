@@ -1,10 +1,39 @@
-- name: Generate SVG
-  run: |
-    mkdir -p streak
-    streak_count=10  # Replace with actual streak fetching logic
-    cat <<EOF > streak/streak.svg
-<svg xmlns="http://www.w3.org/2000/svg" width="300" height="50">
-  <rect width="300" height="50" fill="red"/>
-  <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="20" fill="white">🔥 ${streak_count}-day Streak</text>
-</svg>
-EOF
+name: Daily Streak Saver
+
+on:
+  schedule:
+    # Runs at midnight UTC every day
+    - cron: "0 0 * * *"
+  # Allows manual triggering from GitHub UI
+  workflow_dispatch:
+
+jobs:
+  daily-commit:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write  # Required to push commits
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Update streak log
+        run: |
+          # Create or update streak file
+          echo "# 🚀 Daily Streak Tracker" > streak.md
+          echo "Last automated commit: $(date)" >> streak.md
+          echo "" >> streak.md
+          echo "## Manual Commits Required!" >> streak.md
+          echo "To maintain streak: Make at least 1 manual commit daily." >> streak.md
+          echo "" >> streak.md
+          echo "### Recent Activity" >> streak.md
+          echo "- $(date '+%Y-%m-%d %H:%M:%S'): 🤖 Automated backup commit" >> streak.md
+          
+      - name: Commit and push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add streak.md
+          git commit -m "🤖 Auto-commit: $(date '+%Y-%m-%d') - Daily streak backup"
+          git push
