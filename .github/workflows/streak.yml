@@ -1,0 +1,39 @@
+name: GitHub Streak Card
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # runs every day at midnight UTC
+  workflow_dispatch:
+
+jobs:
+  generate-streak:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Get current streak
+        id: streak
+        run: |
+          user="Mer-World"
+          streak=$(curl -s https://github-contributions-api.deno.dev/$user | jq '.consecutive_days')
+          echo "streak=$streak" >> $GITHUB_ENV
+
+      - name: Generate SVG
+        run: |
+          mkdir -p streak
+          today=$(date +%Y-%m-%d)
+          cat <<EOF > streak/streak_$today.svg
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="50">
+  <rect width="300" height="50" fill="red"/>
+  <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="20" fill="white">🔥 ${{ env.streak }}-day Streak</text>
+</svg>
+EOF
+
+      - name: Commit & Push
+        run: |
+          git config user.name "Mer-World"
+          git config user.email "150444100+Mer-World@users.noreply.github.com"
+          git add streak/
+          git commit -m "Update streak for $(date +%Y-%m-%d)"
+          git push
